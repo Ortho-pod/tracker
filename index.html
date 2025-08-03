@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Roulette Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+/* Force number spinners to be visible across browsers */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button {
+    opacity: 1;
+    -webkit-appearance: inner-spin-button;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+}
+    body {
+  background-color: #1a1a1a; /* dark base color */
+  background-image: url('https://www.transparenttextures.com/patterns/real-carbon-fibre.png');
+  background-repeat: repeat;
+  background-size: auto;
+  color: white;
+  font-family: sans-serif;
+  padding: 20px;
+  text-align: center;
+  margin: 0;
+}
+
+    .layout-container { display: flex; justify-content: center; align-items: flex-start; gap: 20px; }
+    .main-wrapper { display: flex; justify-content: center; gap: 20px; }
+    .roulette-layout { display: flex; }
+    .zero-column { display: flex; flex-direction: column; justify-content: center; gap: 5px; margin-top: -28px; margin-left: -8px; margin-right: 5px;}
+    .zero-column .cell { height: 120px; display: flex; align-items: center; justify-content: center; }
+    .grid-wrapper { display: grid; grid-template-rows: auto auto auto auto; gap: 5px; }
+    .top-row, .bottom-row, .dozen-row { display: grid; grid-template-columns: repeat(12, 40px); gap: 5px; justify-content: center; }
+    .roulette-grid { display: grid; grid-template-columns: repeat(13, 40px); grid-template-rows: repeat(3, 40px); gap: 5px; }
+    .cell { position: relative; }
+    .btn { width: 40px; height: 40px; border: none; font-size: 14px; color: #fff; border-radius: 4px; cursor: pointer; position: relative; }
+    .btn.small-text { font-size: 12px; }
+    .grey { background: #FF0000; }      /* red */
+.blue { background: #34495e; }      /* dark grey, standing in for black */
+.dark { background: #008000; }      /* green (for 0) */
+
+.track-grey { background: #FF0000; }    /* red */
+.track-blue { background: #34495e; }    /* dark grey (black) */
+.track-dark { background: #008000; }    /* green */
+    .counter { position: absolute; top: 1px; right: 2px; font-size: 10px; background: rgba(0,0,0,0.7); padding: 1px 4px; border-radius: 10px; color: white; font-weight: bold; }
+    .transition-counter { position: absolute; bottom: 1px; left: 2px; font-size: 10px; background: rgba(0, 0, 0, 0.7); padding: 1px 4px; border-radius: 10px; color: white; font-weight: bold; text-align: center; display: none; }
+    .field-input {
+  width: 60px;
+  padding: 2px;
+  font-size: 12px;
+  text-align: center;
+  background: #fff;        /* white background */
+  border: 1px solid #666;
+  border-radius: 4px;
+  color: #000;             /* black text for readability */
+}
+
+.line-field {
+  width: 72px;
+  margin-left: -16px;
+  background: #fff;        /* white background */
+  color: #000;
+}
+
+.street-field {
+  width: 40px;
+  margin-left: -24px;
+  background: #fff;        /* white background */
+  color: #000;
+}
+
+    .highlight-field {
+  border: 2px solid olive;            /* olive green border */
+  background: #39FF14;               /* neon green background */
+  color: #000;                       /* black text for contrast */
+  font-weight: bold;
+  padding: 2px 6px;                  /* add padding so it’s not flushed to the word */
+  border-radius: 4px;                /* optional: slightly rounded corners */
+}
+    .settings {
+  margin-top: 10px;
+  padding: 10px;
+  background: #333;
+  border-radius: 6px;
+  display: flex;                     /* flex for horizontal layout */
+  flex-wrap: wrap;                   /* wrap on small screens */
+  gap: 10px;                         /* space between labels */
+  justify-content: center;
+}
+
+.settings label {
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.settings input[type="number"] {
+  width: 60px;
+  min-width: 60px;                   /* prevent shrinking too small */
+  font-size: 14px;                   /* better touch area */
+  padding: 4px;
+  text-align: center;
+  background: #fff;
+  color: #000;
+  border: 1px solid #666;
+  border-radius: 4px;
+  -moz-appearance: textfield;        /* remove Firefox spinners if undesired */
+}
+
+.settings input[type="number"]::-webkit-inner-spin-button,
+.settings input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: inner-spin-button;
+  height: 1.5em;                     /* adjust spinner button size */
+}
+    .tracker-strip { width: 100%; display: flex; flex-wrap: nowrap; overflow-x: auto; margin: 7px; padding: 4px 6px; gap: 4px; background: #111; border-radius: 6px; box-sizing: border-box; }
+    .track-box { min-width: 30px; padding: 6px; border-radius: 4px; font-weight: bold; font-size: 13px; color: white; text-align: center; }
+    .track-grey { background: #FF0000; } .track-blue { background: #34495e; } .track-dark { background: #008000; }
+    .tracker-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 4px;
+}
+
+.tracker-button {
+  padding: 8px 12px;
+  font-size: 18px;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tracker-button.grey {
+  background: #FF0000;  /* red */
+}
+
+.tracker-button.blue {
+  background: #34495e;  /* dark grey/black */
+}
+
+.tracker-button.dark {
+  background: #008000;  /* green */
+}
+
+.tracker-button:hover {
+  background: #1abc9c;  /* keep same hover */
+}
+.tracker-button:hover {
+  background: #1abc9c;
+}
+
+.tracker-strip {
+  flex-grow: 1;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 10px;
+  gap: 6px;
+  background: #111;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+.control-buttons { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+    .control-buttons button { padding: 8px 12px; font-size: 12px; border: none; border-radius: 4px; background: #555; color: white; cursor: pointer; }
+    .control-buttons button:hover { background: #1abc9c; }
+    #fullscreenBtn { background: none; border: none; cursor: pointer; margin-top: 20px; }
+    #fullscreenIcon { font-size: 24px; color: white; }
+    #fullscreenBtn:hover #fullscreenIcon { color: #1abc9c; transform: scale(1.2); }
+
+    .color-0 { background: #ffffcc !important; color: black !important; }
+    .color-1 { background: #ffcc99 !important; color: black !important; }
+    .color-2 { background: #ffccff !important; color: black !important; }
+    .color-3 { background: #d2b48c !important; color: black !important; }
+    .color-4 { background: #add8e6 !important; color: black !important; }
+    .color-5 { background: #deb887 !important; color: black !important; }
+    .color-6 { background: #90ee90 !important; color: black !important; }
+    .color-7 { background: #dda0dd !important; color: black !important; }
+    .color-8 { background: #b2ac88 !important; color: black !important; }
+    .color-9 { background: #808000 !important; color: black !important; }
+    .color-10 { background: #87ceeb !important; color: black !important; }
+    .color-11 { background: #ffbf00 !important; color: black !important; }
+    .color-12 { background: #40e0d0 !important; color: black !important; }
+    .color-13 { background: #ffff00 !important; color: black !important; }
+    .color-14 { background: #8a2be2 !important; color: black !important; }
+    .color-15 { background: #008000 !important; color: white !important; }
+    .color-16 { background: #ffc0cb !important; color: black !important; }
+    .color-17 { background: #ff8c00 !important; color: black !important; }
+    .color-18 { background: #ff6666 !important; color: black !important; }
+    .color-19 { background: #ff0000 !important; color: white !important; }
+
+    .btn[class*="color-"] {
+      font-weight: bold;
+      border: 2px solid white;
+      text-shadow: 0 0 3px rgba(0,0,0,0.8);
+    }
+
+.layout-container {
+  display: flex; /* arrange panels side by side */
+  flex-direction: row; /* horizontal direction */
+  gap: 20px; /* space between Hot and Cold panels */
+  width: auto;
+  margin-bottom: 10px;
+}
+
+.stats-panel {
+  background: #F0F0F0;
+  padding: 4px 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  width: fit-content; /* shrink to fit */
+}
+
+.stats-panel h3 {
+  margin: 0 6px 0 0; /* small space to the right */
+  font-size: 14px;
+  white-space: nowrap;
+}
+.stats-panel.odd-even-panel h3 {
+  color: #00ced1;  /* turquoise */
+}
+
+.stats-panel.high-low-panel h3 {
+  color: #ffa500;  /* orange */
+}
+
+.stats-panel.odd-even-panel ul,
+.stats-panel.high-low-panel ul {
+  flex-direction: column;
+  align-items: flex-start;
+gap: 4px; /* 🔽 reduce vertical gap */
+  margin: 0;
+  padding: 0px 0px;
+}
+
+.stats-panel.odd-even-panel li,
+.stats-panel.high-low-panel li {
+  color: black;
+  font-size: 14px;
+}
+/* NEW: Add specific colors to Hot and Cold headers */
+.stats-panel.hot h3 {
+  color: red;
+  font-weight: bold;
+}
+
+.stats-panel.cold h3 {
+  color: black;
+  font-weight: bold;
+}
+
+.stats-panel ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.stats-panel li {
+  margin-bottom: 0;
+}
+
+/* Roulette colors */
+.stats-panel li.red {
+  color: red;
+}
+
+.stats-panel li.black {
+  color: black;
+}
+
+.stats-panel li.green {
+  color: green;
+}
+</style>
+
+<body>
+  
+<div class="layout-container">
+    <div class="stats-panel odd-even-panel">
+      <ul>
+      <li id="oddNegStat">Odd: 0</li>
+      <li id="evenNegStat">Even: 0</li>
+    </ul>
+  </div>
+<div class="stats-panel hot">
+  <h3>Hot 🔥</h3>
+  <ul id="hotList">
+    <li class="red">1</li>
+    <li class="black">2</li>
+    <li class="red">3</li>
+    <li class="black">4</li>
+    <li class="red">5</li>
+  </ul>
+</div>
+
+<div class="stats-panel cold">
+  <h3>Cold 🧊</h3>
+  <ul id="coldList">
+    <li class="green">0</li>
+    <li class="black">10</li>
+    <li class="red">19</li>
+    <li class="black">28</li>
+  </ul>
+</div>
+<div class="stats-panel high-low-panel">
+        <ul>
+      <li id="highNegStat">High: 0</li>
+      <li id="lowNegStat">Low: 0</li>
+    </ul>
+  </div>
+</div>
+    <div class="main-wrapper">
+    <div class="roulette-layout">
+      <div class="zero-column">
+        <div class="cell">
+          <button class="btn dark" onclick="track(0)">0
+            <span class="counter" id="count-0">0</span>
+            <span class="transition-counter" id="transition-0"></span>
+          </button>
+        </div>
+      </div>
+      <div class="grid-wrapper">
+        <div class="top-row" id="lineFields"></div>
+        <div class="roulette-grid" id="rouletteGrid"></div>
+        <div class="bottom-row" id="streetFields"></div>
+        <div class="dozen-row" id="dozenFields"></div>
+      </div>
+    </div>
+  </div>
+</body>
+
+  <div class="tracker-container">
+  <button class="tracker-button" onclick="clearLast()" style="color: red;">🔙</button>
+  <div class="tracker-strip" id="tracker"></div>
+ <button class="tracker-button" onclick="clearHistory()">🗑️</button>
+</div>
+<div id="totalSpins" style="margin-top: 4px; font-size: 16px; font-weight: bold;">
+  Total Spins: 0
+</div>
+  <div class="settings">
+  <label>Single
+    <input id="alertSingle" type="number" value="150" />
+  </label>
+  <label>Line
+    <input id="alertLine" type="number" value="30" />
+  </label>
+  <label>Street
+    <input id="alertStreet" type="number" value="120" />
+  </label>
+  <label>Dozen
+    <input id="alertDozen" type="number" value="20" />
+  </label>
+  <label>Odd/Even
+    <input id="alertOddEven" type="number" value="20" />
+  </label>
+  <label>High/Low
+    <input id="alertHighLow" type="number" value="20" />
+  </label>
+</div>
+<button id="fullscreenBtn" onclick="toggleFullscreen()">
+      <span id="fullscreenIcon">⛶</span>
+    </button>
+  </div>
+<button id="toggleStatsBtn" style="margin-top: 10px; padding: 6px 12px; font-size: 14px; border: none; border-radius: 4px; background: #555; color: white; cursor: pointer;">
+  Show Statistics
+</button>
+
+<div id="statisticsPanel" style="display: none; margin-top: 10px; font-size: 14px; text-align: center; background: #222; padding: 10px; border-radius: 6px;">
+  <h3>Statistics Summary</h3>
+  <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+    <thead>
+      <tr style="background: #333; color: #fff;">
+        <th style="padding: 6px; border: 1px solid #555;">Max Negative Streaks</th>
+        <th style="padding: 6px; border: 1px solid #555;">Threshold Hits</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding: 6px; border: 1px solid #555;" id="longestSingle">0</td>
+        <td style="padding: 6px; border: 1px solid #555;" id="thresholdSingle">0</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px; border: 1px solid #555;" id="longestLine">0</td>
+        <td style="padding: 6px; border: 1px solid #555;" id="thresholdLine">0</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px; border: 1px solid #555;" id="longestStreet">0</td>
+        <td style="padding: 6px; border: 1px solid #555;" id="thresholdStreet">0</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px; border: 1px solid #555;" id="longestDozen">0</td>
+        <td style="padding: 6px; border: 1px solid #555;" id="thresholdDozen">0</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px; border: 1px solid #555;" id="longestOddEven">0</td>
+        <td style="padding: 6px; border: 1px solid #555;" id="thresholdOddEven">0</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px; border: 1px solid #555;" id="longestHighLow">0</td>
+        <td style="padding: 6px; border: 1px solid #555;" id="thresholdHighLow">0</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+    <script>
+    const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+    const groupA = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36];
+    const groupB = [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35];
+    const groupC = [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34];
+
+    let groupACounter = 0, groupBCounter = 0, groupCCounter = 0;
+
+let oddNegCounter = 0;
+let evenNegCounter = 0;
+let highNegCounter = 0;
+let lowNegCounter = 0;
+
+    const log = [], counters = {};
+const totalHits = {};
+for (let i = 0; i <= 36; i++) totalHits[i] = 0;
+    const groupDefs = { lines: [], streets: [], dozens: [[1,12],[13,24],[25,36]] };
+    for (let i = 1; i <= 36; i += 6) groupDefs.lines.push([i, i+5]);
+    for (let i = 1; i <= 34; i += 3) groupDefs.streets.push([i, i+2]);
+    for (let i = 0; i <= 36; i++) counters[i] = 0;
+let maxSingle = 0;
+let maxLine = 0;
+let maxStreet = 0;
+let maxDozen = 0;
+let maxOddEven = 0;
+let maxHighLow = 0;
+
+let thresholdHitsSingle = 0;
+let thresholdHitsLine = 0;
+let thresholdHitsStreet = 0;
+let thresholdHitsDozen = 0;
+let thresholdHitsOddEven = 0;
+let thresholdHitsHighLow = 0;
+    const groupCounts = {}; Object.entries(groupDefs).forEach(([k,v]) => v.forEach(g => groupCounts[`${k}-${g[0]}`] = 0));
+    const lineFields = document.getElementById("lineFields");
+    const streetFields = document.getElementById("streetFields");
+    const dozenFields = document.getElementById("dozenFields");
+    const rouletteGrid = document.getElementById("rouletteGrid");
+    const lineInputs = [], streetInputs = [], dozenInputs = [];
+    const extraFields = {};
+
+    const rows = [
+      [3,6,9,12,15,18,21,24,27,30,33,36],
+      [2,5,8,11,14,17,20,23,26,29,32,35],
+      [1,4,7,10,13,16,19,22,25,28,31,34]
+    ];
+
+    rows.forEach((row, rowIndex) => {
+      row.forEach(num => {
+        const cell = document.createElement("div"); cell.className = "cell";
+        const btn = document.createElement("button");
+        btn.className = "btn " + (redNumbers.includes(num) ? "grey" : "blue");
+        btn.textContent = num;
+        btn.onclick = () => track(num);
+        const counter = document.createElement("span"); counter.className = "counter"; counter.id = `count-${num}`; counter.textContent = "0";
+        const transition = document.createElement("span"); transition.className = "transition-counter"; transition.id = `transition-${num}`; transition.textContent = "";
+        btn.appendChild(counter); btn.appendChild(transition);
+        cell.appendChild(btn);
+        rouletteGrid.appendChild(cell);
+
+        if (num === 36 && rowIndex === 0) addExtraField('A');
+        if (num === 35 && rowIndex === 1) addExtraField('B');
+        if (num === 34 && rowIndex === 2) addExtraField('C');
+      });
+    });
+
+    function addExtraField(label) {
+      const cell = document.createElement("div"); cell.className = "cell";
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "field-input";
+      input.readOnly = true;
+      input.placeholder = label;
+      extraFields[label] = input;
+      cell.appendChild(input);
+      rouletteGrid.appendChild(cell);
+    }
+
+    for (let i = 0; i < 12; i++) {
+      if (i % 2 === 0) {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = "field-input line-field";
+        input.readOnly = true;
+        lineFields.appendChild(input);
+        lineInputs.push(input);
+      } else {
+        const spacer = document.createElement("div"); spacer.style.width = "40px"; lineFields.appendChild(spacer);
+      }
+    }
+
+    for (let i = 0; i < 12; i++) {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "field-input street-field";
+      input.readOnly = true;
+      streetFields.appendChild(input);
+      streetInputs.push(input);
+    }
+
+    for (let i = 0; i < 12; i++) {
+      const cell = document.createElement("div");
+      if (i === 0 || i === 4 || i === 8) {
+        const input = document.createElement("input"); input.type = "text"; input.className = "field-input"; input.readOnly = true;
+        dozenInputs.push(input); cell.appendChild(input);
+      }
+      dozenFields.appendChild(cell);
+    }
+
+    function speak(text) {
+  if ('speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    speechSynthesis.speak(utterance);
+  }
+}
+
+function applyHighlightClasses(value, base, btnEl, transitionEl) {
+  btnEl.className = btnEl.className.replace(/\bcolor-\d+\b/g, "").replace('small-text', "").trim();
+  const thresholds = [0, 36, 18, 12, 9, 7, 6, 5, 4, 4, 4, 3, 3, 3, 2, 2, 2, 2, 2, 2];
+  let cumulative = base;
+  let colorIndex = -1;
+  let stage = 0;
+  for (let i = 0; i < thresholds.length; i++) {
+    cumulative += thresholds[i];
+    if (value >= cumulative) {
+      colorIndex = i;
+      stage = i + 1;
+    }
+  }
+  if (colorIndex >= 0) {
+    btnEl.classList.add(`color-${colorIndex}`);
+    btnEl.classList.add('small-text');
+
+    const buttonNumber = btnEl.firstChild.textContent.trim();
+    const previousStage = transitionEl.textContent;
+
+    if (previousStage != stage) {
+      speak(`${buttonNumber}, stage ${stage}`);
+    }
+
+    transitionEl.textContent = stage;
+    transitionEl.style.display = 'inline-block';
+  } else {
+    transitionEl.textContent = "";
+    transitionEl.style.display = 'none';
+  }
+}
+
+    function track(num) {
+      log.unshift(num);
+totalHits[num]++;
+if (num === 0) {
+    oddNegCounter++;
+    evenNegCounter++;
+    highNegCounter++;
+    lowNegCounter++;
+  } else {
+    if (num % 2 === 0) {
+      evenNegCounter = 0;
+      oddNegCounter++;
+    } else {
+      oddNegCounter = 0;
+      evenNegCounter++;
+    }
+
+    if (num >= 1 && num <= 18) {
+      lowNegCounter = 0;
+      highNegCounter++;
+    } else if (num >= 19 && num <= 36) {
+      highNegCounter = 0;
+      lowNegCounter++;
+    }
+  }
+// Add this right below the counter updates:
+const oddEvenThreshold = parseInt(document.getElementById("alertOddEven").value);
+const highLowThreshold = parseInt(document.getElementById("alertHighLow").value);
+
+const oddEl = document.getElementById('oddNegStat');
+const evenEl = document.getElementById('evenNegStat');
+const highEl = document.getElementById('highNegStat');
+const lowEl = document.getElementById('lowNegStat');
+
+oddEl.classList.toggle("highlight-field", oddNegCounter >= oddEvenThreshold);
+evenEl.classList.toggle("highlight-field", evenNegCounter >= oddEvenThreshold);
+highEl.classList.toggle("highlight-field", highNegCounter >= highLowThreshold);
+lowEl.classList.toggle("highlight-field", lowNegCounter >= highLowThreshold);
+
+  document.getElementById('oddNegStat').textContent = `Odd: ${oddNegCounter}`;
+  document.getElementById('evenNegStat').textContent = `Even: ${evenNegCounter}`;
+  document.getElementById('highNegStat').textContent = `High: ${highNegCounter}`;
+  document.getElementById('lowNegStat').textContent = `Low: ${lowNegCounter}`;
+      counters[num] = 0;
+
+      if (groupA.includes(num)) groupACounter = 0; else groupACounter++;
+      if (groupB.includes(num)) groupBCounter = 0; else groupBCounter++;
+      if (groupC.includes(num)) groupCCounter = 0; else groupCCounter++;
+
+      extraFields['A'].value = groupACounter;
+      extraFields['B'].value = groupBCounter;
+      extraFields['C'].value = groupCCounter;
+
+      const dozenThreshold = parseInt(document.getElementById("alertDozen").value);
+      extraFields['A'].classList.toggle("highlight-field", groupACounter >= dozenThreshold);
+      extraFields['B'].classList.toggle("highlight-field", groupBCounter >= dozenThreshold);
+      extraFields['C'].classList.toggle("highlight-field", groupCCounter >= dozenThreshold);
+
+      for (let i = 0; i <= 36; i++) {
+  if (i !== num) counters[i]++;
+
+  // ✅ Update longest negative single streak
+  if (counters[i] > maxSingle) {
+    maxSingle = counters[i];
+  }
+
+  // ✅ Count if threshold is hit exactly
+  const threshold = parseInt(document.getElementById("alertSingle").value);
+  if (counters[i] === threshold) {
+    thresholdHitsSingle++;
+  }
+
+  // Existing UI updates
+  const el = document.getElementById(`count-${i}`);
+  const transEl = document.getElementById(`transition-${i}`);
+  const btnEl = el.closest('button');
+  el.textContent = counters[i];
+  applyHighlightClasses(counters[i], threshold, btnEl, transEl);
+}
+
+
+      Object.entries(groupDefs).forEach(([key, groups]) => {
+        groups.forEach(group => {
+          const id = `${key}-${group[0]}`;
+          groupCounts[id] = group[0] <= num && num <= group[1] ? 0 : groupCounts[id] + 1;
+        });
+      });
+
+      updateLineFields();
+      updateStreetFields();
+      updateDozenFields();
+      updateTracker();
+      updateStats();
+ document.getElementById('totalSpins').textContent = `Total Spins: ${log.length}`;    
+}
+
+    function updateLineFields() {
+  const threshold = parseInt(document.getElementById("alertLine").value);
+  for (let i = 0; i < 6; i++) {
+    const count = groupCounts[`lines-${1 + i * 6}`];
+    const input = lineInputs[i];
+    input.value = count;
+    input.classList.toggle("highlight-field", count >= threshold);
+
+    // ✅ Update max streak
+    if (count > maxLine) {
+      maxLine = count;
+    }
+
+    // ✅ Count threshold hits
+    if (count === threshold) {
+      thresholdHitsLine++;
+    }
+  }
+}
+  
+    function updateStreetFields() {
+  const threshold = parseInt(document.getElementById("alertStreet").value);
+  for (let i = 0; i < 12; i++) {
+    const count = groupCounts[`streets-${1 + i * 3}`];
+    const input = streetInputs[i];
+    input.value = count;
+    input.classList.toggle("highlight-field", count >= threshold);
+
+    // ✅ Update max streak
+    if (count > maxStreet) {
+      maxStreet = count;
+    }
+
+    // ✅ Count threshold hits
+    if (count === threshold) {
+      thresholdHitsStreet++;
+    }
+      }
+    }
+
+    function updateDozenFields() {
+  const threshold = parseInt(document.getElementById("alertDozen").value);
+  [1, 13, 25].forEach((v, i) => {
+    const count = groupCounts[`dozens-${v}`];
+    const input = dozenInputs[i];
+    input.value = count;
+    input.classList.toggle("highlight-field", count >= threshold);
+
+    // ✅ Update max streak
+    if (count > maxDozen) {
+      maxDozen = count;
+    }
+
+    // ✅ Count threshold hits
+    if (count === threshold) {
+      thresholdHitsDozen++;
+    }
+  });
+}
+
+    function updateTracker() {
+      const tracker = document.getElementById("tracker");
+      tracker.innerHTML = '';
+      log.forEach(num => {
+        const div = document.createElement("div");
+        div.className = `track-box track-${num === 0 ? 'dark' : redNumbers.includes(num) ? 'grey' : 'blue'}`;
+        div.textContent = num;
+        tracker.appendChild(div);
+      });
+    }
+
+  function updateStats() {
+  const hotList = document.getElementById("hotList");
+  const coldList = document.getElementById("coldList");
+
+  const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+  const blackNumbers = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35];
+  const greenNumbers = [0];
+
+  const sortedHot = Object.entries(totalHits)
+  .sort((a, b) => b[1] - a[1]) // highest hits first
+  .slice(0, 5);
+
+const sortedCold = Object.entries(totalHits)
+  .sort((a, b) => a[1] - b[1]) // lowest hits first
+  .slice(0, 5);
+
+  // Render Hot 🔥
+  hotList.innerHTML = sortedHot.map(([n, c]) => {
+    const num = parseInt(n, 10);
+    let colorClass = redNumbers.includes(num)
+      ? "red"
+      : blackNumbers.includes(num)
+      ? "black"
+      : "green";
+
+    return `<li class="${colorClass}" data-count="${c}">${n}</li>`;
+  }).join("");
+
+  // Render Cold 🧊
+  coldList.innerHTML = sortedCold.map(([n, c]) => {
+    const num = parseInt(n, 10);
+    let colorClass = redNumbers.includes(num)
+      ? "red"
+      : blackNumbers.includes(num)
+      ? "black"
+      : "green";
+
+    return `<li class="${colorClass}" data-count="${c}">${n}</li>`;
+  }).join("");
+}
+
+    function clearLast() {
+  if (log.length > 0) {
+    const lastNum = log.shift();
+
+    // Reset all single number negative counters
+    for (let i = 0; i <= 36; i++) {
+      counters[i] = 0;
+    }
+
+    // Rebuild single number negative counters by replaying log
+    for (let i = 0; i < log.length; i++) {
+      const num = log[i];
+      // reset the hit number, increment others
+      for (let j = 0; j <= 36; j++) {
+        if (j === num) {
+          counters[j] = 0;
+        } else {
+          counters[j]++;
+        }
+      }
+    }
+
+    // Update UI counters
+    for (let i = 0; i <= 36; i++) {
+      const el = document.getElementById(`count-${i}`);
+      const transEl = document.getElementById(`transition-${i}`);
+      const btnEl = el.closest('button');
+      el.textContent = counters[i];
+      applyHighlightClasses(counters[i], parseInt(document.getElementById("alertSingle").value), btnEl, transEl);
+    }
+
+    // Reverse group counters (lines, streets, dozens)
+    Object.entries(groupDefs).forEach(([key, groups]) => {
+      groups.forEach(group => {
+        const id = `${key}-${group[0]}`;
+        // Rebuild group counters by replaying log
+        groupCounts[id] = 0;
+        for (let i = 0; i < log.length; i++) {
+          const num = log[i];
+          if (group[0] <= num && num <= group[1]) {
+            groupCounts[id] = 0;
+          } else {
+            groupCounts[id]++;
+          }
+        }
+      });
+    });
+
+    // Rebuild A/B/C group counters
+    groupACounter = 0;
+    groupBCounter = 0;
+    groupCCounter = 0;
+    for (let i = 0; i < log.length; i++) {
+      const num = log[i];
+      if (groupA.includes(num)) {
+        groupACounter = 0;
+      } else {
+        groupACounter++;
+      }
+      if (groupB.includes(num)) {
+        groupBCounter = 0;
+      } else {
+        groupBCounter++;
+      }
+      if (groupC.includes(num)) {
+        groupCCounter = 0;
+      } else {
+        groupCCounter++;
+      }
+    }
+
+    extraFields['A'].value = groupACounter;
+    extraFields['B'].value = groupBCounter;
+    extraFields['C'].value = groupCCounter;
+
+    // Rebuild streak counters (odd/even, high/low)
+    oddNegCounter = 0;
+    evenNegCounter = 0;
+    highNegCounter = 0;
+    lowNegCounter = 0;
+
+    for (let i = 0; i < log.length; i++) {
+      const num = log[i];
+
+      if (num === 0) {
+        oddNegCounter++;
+        evenNegCounter++;
+        highNegCounter++;
+        lowNegCounter++;
+      } else {
+        if (num % 2 === 0) {
+          evenNegCounter = 0;
+          oddNegCounter++;
+        } else {
+          oddNegCounter = 0;
+          evenNegCounter++;
+        }
+
+        if (num >= 1 && num <= 18) {
+          lowNegCounter = 0;
+          highNegCounter++;
+        } else if (num >= 19 && num <= 36) {
+          highNegCounter = 0;
+          lowNegCounter++;
+        }
+      }
+    }
+
+    document.getElementById('oddNegStat').textContent = `Odd: ${oddNegCounter}`;
+    document.getElementById('evenNegStat').textContent = `Even: ${evenNegCounter}`;
+    document.getElementById('highNegStat').textContent = `High: ${highNegCounter}`;
+    document.getElementById('lowNegStat').textContent = `Low: ${lowNegCounter}`;
+    document.getElementById('totalSpins').textContent = `Total Spins: ${log.length}`;
+
+
+    updateLineFields();
+updateStreetFields();
+updateDozenFields();
+updateTracker();
+updateStats();
+
+document.getElementById('longestSingle').textContent = `Single: ${maxSingle}`;
+document.getElementById('longestLine').textContent = `Line: ${maxLine}`;
+document.getElementById('longestStreet').textContent = `Street: ${maxStreet}`;
+document.getElementById('longestDozen').textContent = `Dozen: ${maxDozen}`;
+document.getElementById('longestOddEven').textContent = `Odd/Even: ${maxOddEven}`;
+document.getElementById('longestHighLow').textContent = `High/Low: ${maxHighLow}`;
+
+document.getElementById('thresholdSingle').textContent = `Single: ${thresholdHitsSingle}`;
+document.getElementById('thresholdLine').textContent = `Line: ${thresholdHitsLine}`;
+document.getElementById('thresholdStreet').textContent = `Street: ${thresholdHitsStreet}`;
+document.getElementById('thresholdDozen').textContent = `Dozen: ${thresholdHitsDozen}`;
+document.getElementById('thresholdOddEven').textContent = `Odd/Even: ${thresholdHitsOddEven}`;
+document.getElementById('thresholdHighLow').textContent = `High/Low: ${thresholdHitsHighLow}`;
+
+document.getElementById('totalSpins').textContent = `Total Spins: ${log.length}`;
+
+  }
+}
+
+
+function clearHistory() {
+  log.length = 0;
+
+  for (let i = 0; i <= 36; i++) totalHits[i] = 0;
+
+  resetAllCounts();
+  updateTracker();
+  updateStats();
+
+  document.getElementById('totalSpins').textContent = `Total Spins: 0`;
+}
+
+function resetAllCounts() {
+  for (let i = 0; i <= 36; i++) {
+    counters[i] = 0;
+    const el = document.getElementById(`count-${i}`);
+    const transEl = document.getElementById(`transition-${i}`);
+    const btnEl = el.closest('button');
+    el.textContent = "0";
+    transEl.textContent = "";
+    transEl.style.display = 'none';
+    btnEl.className = btnEl.className.replace(/\bcolor-\d+\b/g, "").replace('small-text', "").trim();
+  }
+
+  Object.keys(groupCounts).forEach(k => groupCounts[k] = 0);
+
+  [...lineInputs, ...streetInputs, ...dozenInputs].forEach(i => {
+    i.value = "0";
+    i.classList.remove("highlight-field");
+  });
+
+  Object.values(extraFields).forEach(input => {
+    input.value = "";
+    input.classList.remove("highlight-field");
+  });
+
+  groupACounter = 0;
+  groupBCounter = 0;
+  groupCCounter = 0;
+
+  oddNegCounter = 0;
+  evenNegCounter = 0;
+  highNegCounter = 0;
+  lowNegCounter = 0;
+
+  document.getElementById('oddNegStat').textContent = `Odd: 0`;
+  document.getElementById('evenNegStat').textContent = `Even: 0`;
+  document.getElementById('highNegStat').textContent = `High: 0`;
+  document.getElementById('lowNegStat').textContent = `Low: 0`;
+  document.getElementById('totalSpins').textContent = `Total Spins: 0`;
+}
+    function toggleFullscreen() {
+      const icon = document.getElementById("fullscreenIcon");
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => { icon.textContent = "🡽"; })
+          .catch(err => { alert(`Fullscreen error: ${err.message}`); });
+      } else {
+        document.exitFullscreen().then(() => { icon.textContent = "⛶"; });
+      }
+    }
+document.getElementById('toggleStatsBtn').addEventListener('click', () => {
+  const panel = document.getElementById('statisticsPanel');
+  const btn = document.getElementById('toggleStatsBtn');
+  if (panel.style.display === 'none') {
+    panel.style.display = 'block';
+    btn.textContent = 'Hide Statistics';
+  } else {
+    panel.style.display = 'none';
+    btn.textContent = 'Show Statistics';
+  }
+});
+    window.onload = updateStats;
+  </script>
+</body>
+</html>
